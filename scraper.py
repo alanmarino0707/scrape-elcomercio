@@ -9,10 +9,10 @@ import csv
 HOME_URL = "https://www.elcomercio.com/"
 
 XPATH_ARTICLE_LINK = '//h3[@class="list-item__title"]/a/@href'
-XPATH_ARTICLE_TIME = '//div[@class="entry__date text-nowrap text-muted"]/time/text()'
+XPATH_ARTICLE_TIME = '//time/text()'
 XPATH_ARTICLE_AUTHOR = '//div[@class="entry__author"]/text()'
 XPATH_ARTICLE_TITLE = '//h1[@class="entry__title"]/text()'
-XPATH_ARTICLE_BODY = '//div[@class="entry__content tbl-forkorts-article"]/p/descendant-or-self::node()/text()'
+XPATH_ARTICLE_BODY = '//div[contains(@class, "entry__content")]/p/descendant-or-self::node()/text()'
 XPATH_CATEGORIES = '//ul[@class="site-topics__topics"]//a/text()'
 
 CSV_HEADER = ["Título de la publicación","Hora de publicación","Autor","Cuerpo de la publicación","Link del artículo"]
@@ -35,24 +35,21 @@ def parse_news(link, timedate, choices, ctr):
                 title = title.replace('"', "")
                 title = title.replace("¿", "")
                 title = title.replace("?", "")
-                published = parsed.xpath(XPATH_ARTICLE_TIME)[0]
+                published = parsed.xpath(XPATH_ARTICLE_TIME)[0][0]
                 author = parsed.xpath(XPATH_ARTICLE_AUTHOR)
+                author = str(author).replace('\n',"")
                 body = parsed.xpath(XPATH_ARTICLE_BODY)
+                joined_body = "".join(body)
             except IndexError:
                 return
             # choices[1] saves the user's file type. 
             if choices[1]== "1":
                 # establishing creation of the csv file on its first iteration. Also, adding the header and wrting the rows of the first article
-                if ctr == 0:
-                    with open(f"{timedate[0]}/{timedate[1]}.csv","w", newline="", encoding = "utf-8") as f:
-                        writer = csv.writer(f)
-                        writer.writerow(CSV_HEADER)
-                        rows =[title,published,author,body,link]
-                        writer.writerow(rows)
-                else:
-                    # writing the next rows for the iterations left to complete
+                with open(f"{timedate[0]}/{timedate[1]}.csv","w", newline="", encoding = "utf-8") as f:
                     writer = csv.writer(f)
-                    rows =[title,published,author,body,link]
+                    if ctr == 0:
+                        writer.writerow(CSV_HEADER)
+                    rows =[title,published,author,joined_body,link]
                     writer.writerow(rows)
             elif choices[1] == "2":
                 # establishing creation of the txt files and writing all the data in them
@@ -63,7 +60,7 @@ def parse_news(link, timedate, choices, ctr):
                     f.write('\n\n')
                     f.write("Autor: " + author)
                     f.write('\n\n')
-                    f.write(body)
+                    f.write(joined_body)
                     f.write('\n\n')
                     f.write("Link al artículo" + link)
 
@@ -71,12 +68,14 @@ def parse_news(link, timedate, choices, ctr):
                 # establishing creation of the json file on its first iteration.
                 # Also, creating dictionaries which contain the data and saving them into a list
                 if ctr == 0:
+                    list_d_data = []
                     with open(f"{timedate[0]}/{timedate[1]}.json","w", newline="", encoding = "utf-8") as f:
-                        list_d_data = []
-                        dict_data = {"Título":title, "Hora de publicación":published, "Autor de la publicación":author,"Cuerpo de la publicación":body,"Link del artículo":link}
-                    list_d_data += dict_data
+                        dict_data = {"Título":title, "Hora de publicación":published, "Autor de la publicación":author,"Cuerpo de la publicación":joined_body,"Link del artículo":link}
+                        list_d_data += dict_data
+                    f.close()
                 elif ctr in range(11,17):
-                    dict_data = {"Título":title, "Hora de publicación":published, "Autor de la publicación":author,"Cuerpo de la publicación":body,"Link del artículo":link}
+                    f = open(f"{timedate[0]}/{timedate[1]}.json","w", newline="", encoding = "utf-8")
+                    dict_data = {"Título":title, "Hora de publicación":published, "Autor de la publicación":author,"Cuerpo de la publicación":joined_body,"Link del artículo":link}
                     list_d_data += dict_data
                     dict_json = str(list_d_data)
                     dict_json = dict_json.replace('[','{')
@@ -84,9 +83,12 @@ def parse_news(link, timedate, choices, ctr):
                     json_file = open(f"{timedate[0]}/{timedate[1]}.json","w")
                     json_file.write(dict_json)
                     json_file.close()
+                    f.close()
                 else:
-                    dict_data = {"Título":title, "Hora de publicación":published, "Autor de la publicación":author,"Cuerpo de la publicación":body,"Link del artículo":link}
+                    f = open(f"{timedate[0]}/{timedate[1]}.json","w", newline="", encoding = "utf-8")
+                    dict_data = {"Título":title, "Hora de publicación":published, "Autor de la publicación":author,"Cuerpo de la publicación":joined_body,"Link del artículo":link}
                     list_d_data += dict_data
+                    f.close()
             else:
                 return
         else:
@@ -114,11 +116,11 @@ def parse_home(choices,categories):
                         # If the length of choices is 2, it is because the user chose to scrape the latest news
                         # Accessing the link for the latest news
                         if len(choices) == 2:
-                            response_pages = requests.get(f"{response!r}ultima-hora/page/{itr+1}")
+                            response_pages = requests.get(f"{HOME_URL}ultima-hora/page/{itr+1}")
                         # If the length of choices is 3, it is because the user chose to scrape the trending news
                         # Accessing the link for the trending news
                         elif len(choices) == 3:
-                            response_pages = requests.get(f"{response!r}tag/{categories[int(choices[2])-1]}/page/{itr+1}")
+                            response_pages = requests.get(f"{HOME_URL}tag/{categories[int(choices[2])-1]}/page/{itr+1}")
                         if response_pages.status_code == 200:
                         # getting main URL, and transformig its HTML structure in order to get categories through its XPATH
                             home_g = response_pages.content.decode("utf-8")
@@ -156,7 +158,7 @@ def parse_home_trends(choices):
             while control:
                 # Directing parse_home_trends(choices) into parse_home(choices)
                 # Regardless of the type of news the user chooses, parse_home will always be run
-                if t_choice in range(1,len(categories)):
+                if t_choice in range(1,len(categories)+1):
                     t_choice = str(t_choice)
                     choices += t_choice
                     parse_home(choices,categories)
@@ -177,19 +179,22 @@ def parse_home_trends(choices):
 # If the user chooses to get the trending news, they will be directed to parse_home_trends and then to parse_home
 # choices is a list in which all choices made by the user will be saved at some point.
 def scraper():
-    print("Hola. Obtendré las noticias más importantes y las guardaré para ti en un archivo .csv, en uno .json, en uno ,txt o en varios archivos .txt")
+    print("Hola. Obtendré las noticias más importantes y las guardaré para ti en un archivo .csv, en uno .json, en uno ,txt o en varios archivos .txt \n")
     # Inserting how many pages and what file type the user wants.
-    pages = [int(input(f"¿Cuántas páginas de las noticias deseas obtener? Cada página tiene 10 noticias. Escribe un número del 1 al 6"))]
-    file_type = [str(input("¿Qué tipo de archivo quieres? \n\n 1 para .csv \n\n 2 para .txt \n\n 3 para .json"))]
+    pages = int(input(f"¿Cuántas páginas de las noticias deseas obtener? Cada página tiene 10 noticias. Escribe un número del 1 al 6: \n"))
+    file_type = str(input("¿Qué tipo de archivo quieres? \n\n 1 para .csv \n\n 2 para .txt \n\n 3 para .json \n"))
     # Saving what the user chose into the list choices
-    choices = pages + file_type
+    choices = []
+    choices.append(pages)
+    choices.append(file_type)
+    categories = []
     control = True
     # Asking the user whether they want trending news or the last news.
     # This directs them to  parse_home(choices) or to parse_home_trends(choices)
     while control:
-        u_choice = str(input("Para escoger las noticias del último momento presiona 1. \n\n Si deseas noticias de los temas en tendencia, presiona 2."))
+        u_choice = str(input("Para escoger las noticias del último momento presiona 1. \n\n Si deseas noticias de los temas en tendencia, presiona 2. \n"))
         if u_choice == "1":
-            parse_home(choices)
+            parse_home(choices, categories)
             break
         elif u_choice == "2":
             parse_home_trends(choices)
