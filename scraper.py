@@ -71,9 +71,9 @@ def parse_news(link, timedate, choices):
                     f.write('\n\n')
                     f.write(joined_body)
                     f.write('\n\n')
-                    f.write("Link al artículo" + link)
+                    f.write("Link al artículo: " + link)
         else:
-            raise ValueError(f'Error: {article.status_code!r}')
+            raise ValueError(f"Error: {article.status_code!r}")
     except ValueError as ve:
         print(ve)
 
