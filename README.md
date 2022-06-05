@@ -29,8 +29,10 @@ Programado en python. Utiliza las librerías "lxml" y "requests" para obtener lo
 
 Programmed in python. It uses the "lxml" and "requests" libraries to obtain the data from the https://elcomercio.com website.
 
-[requests] = https://requests.readthedocs.io/en/latest/ --- Obtiene contenido de una URL con una petición GET // Obtains content with a GET request
+[requests] = https://requests.readthedocs.io/en/latest/ --- Obtiene contenido de una URL con una petición GET // Obtains content with a GET request.
+
 [lxml] = https://lxml.de/ --- Procesa XML y HTML // Processes XML and HTML
 
--_-_-\_
+-_-_-
+
 Creado por Rothman Alan 😸
