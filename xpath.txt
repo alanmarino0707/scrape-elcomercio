@@ -1,5 +1,5 @@
 XPATH_ARTICLE_LINK = '//h3[@class="list-item__title"]/a/@href'
-XPATH_ARTICLE_TIME = '//time/text()'
+XPATH_ARTICLE_TIME = '//div[contains(@class,"entry__date text-nowrap text-muted")]/time/text()'
 XPATH_ARTICLE_AUTHOR = '//div[@class="entry__author"]/text()'
 XPATH_ARTICLE_TITLE = '//h1[@class="entry__title"]/text()'
 XPATH_ARTICLE_BODY = '//div[contains(@class, "entry__content")]/p/descendant-or-self::node()/text()'
